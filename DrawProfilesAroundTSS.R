@@ -90,7 +90,7 @@ for(n in 1:length(filename)){  #repeat
     
     # plots the cumulative profile
     cat("Drawing profiles...\n")
-    png(file.path(outpath, paste(filename, "w", window.size, "png", sep=".")), width=2000, height=1200)
+    png(file.path(outpath, paste(sample.name, "w", window.size, "png", sep=".")), width=2000, height=1200)
         plot(-window.size:window.size, colMeans(mat), col="darkorange", type="l", lwd=2, ylab="mean.coverage", xlab="position", main=sample.name)
     dev.off()
     
@@ -102,7 +102,7 @@ for(n in 1:length(filename)){  #repeat
 
     # plots separately profiles for each modality
     cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
-    png(file.path(outpath, paste(filename, "bivalent", "w", window.size, "png", sep=".")), width=2000, height=2000)
+    png(file.path(outpath, paste(sample.name, "bivalent", "w", window.size, "png", sep=".")), width=2000, height=2000)
         par(mfrow=c(2,2), cex.main=2.5, cex.lab=2.5, cex.axis=2.5)
         for(i in 1:length(mat.s)){
             print(i)
@@ -113,7 +113,7 @@ for(n in 1:length(filename)){  #repeat
 
     # plots modality profiles on one plot
     cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
-    png(file.path(outpath, paste(filename, "bivalent", "oneplot", "w", window.size, "png", sep=".")), width=1200, height=1200)
+    png(file.path(outpath, paste(sample.name, "bivalent", "oneplot", "w", window.size, "png", sep=".")), width=1200, height=1200)
         par(cex.main=2, cex.lab=2, cex.axis=2)
         for(i in 1:length(mat.s)){
             print(i)
