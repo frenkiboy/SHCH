@@ -6,10 +6,17 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXFileReference section */
+		8958C8321483BDAD00AFE450 /* Functions.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = Functions.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
+		8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = DrawProfilesAroundTSS.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
+/* End PBXFileReference section */
+
 /* Begin PBXGroup section */
 		8958C8291483BC3500AFE450 = {
 			isa = PBXGroup;
 			children = (
+				8958C8321483BDAD00AFE450 /* Functions.R */,
+				8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */,
 			);
 			sourceTree = "<group>";
 		};
