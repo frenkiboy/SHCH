@@ -43,7 +43,7 @@ seqlen = seqlen[names(seqlen) != "chrM"]
 for(i in names(seqlen)){
     cat(i,"\n")
     granges.tmp = tss.granges.s[[i]]
-    granges.tmp = granges.tmp[as.vector(end(granges.tmp)) < seqlen[i] & start(granges) > 0]
+    granges.tmp = granges.tmp[as.vector(end(granges.tmp)) < seqlen[i] & start(granges.tmp) > 0]
     tss.granges.s[[i]] = granges.tmp
 }
 
@@ -55,32 +55,35 @@ for(n in 1:length(filename)){  #repeat
     
     #initialization of matrix
     anno_dataframe=NULL
-    sample.coverage = l.data[[filename[n]]]
+    sample.name = filename[n]
+    cat("Sample name:", sample.name, "\n")
+    
+    sample.coverage = l.data[[sample.name]]
     # order the samples so that the coverage and the windows have the same order
-    sample.coverage = sample.coverage[order(chrs)]
-    windows.s = tss.granges.s[order(chrs)]
-    
+    cat("Ordering the samples...\n")
+    sample.coverage = sample.coverage[order(names(sample.coverage))]
+    windows.s = tss.granges.s[order(names(tss.granges.s))]
+    strand = unlist(lapply(windows.s, function(x)as.vector(strand(x))))
+    if(! all(names(sample.coverage) == names(windows.s)))
+        stop("List names do not match")
+
+    cat("Getting the views...\n")
     v = Views(sample.coverage, ranges(windows.s))
-    v = lapply(v, function(x)viewApply(x, as.vector))
-    mat = do.call(rbind, lapply(v, t))
+    vm = lapply(v, function(x)viewApply(x, as.vector))
+    mat = do.call(rbind, lapply(vm, t))
+
+    cat("Reversing the matrices...\n")
+    strand.ind = strand == "-"
+    mat[strand.ind,] = t(apply(mat[strand.ind,], 1, rev))
+    
+    tmp.path="/home/guests/abcsan/SubstituteHistones"
+    png(file.path(tmp.path, "tryout.png"), width=2000, height=1200)
+        plot(-5000:5000, colMeans(mat), col="darkorange", type="l")
+    dev.off()
+
     
     
     
     
     
     
-    
-    for(k in 1:21){     #repeat 
-        chromosome <-names(l.norm[[n]][k])     #choose chromosome
-        chr_anno<-annotation[annotation[ ,1]==chromosome, ]   #select the gene whose chromosome correspond to chromosome of repeat
-        for(i in 1:nrow(chr_anno)){
-            chr_cov<-Views(l.norm[[n]][[k]], start=chr_anno[i, 2]-5000, end=chr_anno[i, 2]+5000, name=chr_anno[i, 6])  #these names are derived from ensemble transcript ids. they are not duplicated.
-            chr_vector<-as.vector(chr_cov[[1]])
-            chr_matrix<-as.matrix(chr_vector)
-            colnames(chr_matrix)<-chr_anno[i, 6]
-            anno_dataframe<-cbind(anno_dataframe, chr_matrix)
-    }
-    }
-        write.table(anno_dataframe, file.path("/home/ymasashi/ABC/R_and_perl_for_ChIPseq_analysis/", paste(filename[n], "TSS+-5kb_annotation.polyA-_tpm.txt", sep=".")), col.names=T, row.names=F, quote=F, sep="\t")   #save TSS+- 5kb coverage as dataframe. automatically decide file name by file.path function.
-    gc()
-}
