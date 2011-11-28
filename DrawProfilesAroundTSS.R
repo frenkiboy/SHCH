@@ -4,9 +4,11 @@
 
 # ------------------------------------------- #
 # SCRIPT VARIABLES
-window.size = 5000
+window.size = 2000
 
 genome.name = "BSgenome.Mmusculus.UCSC.mm9"
+
+outpath="/home/guests/abcsan/SubstituteHistones/Results/ProfileDistributions"
 
 
 # ------------------------------------------- #
@@ -31,8 +33,16 @@ sub("h.+","h", names(l.data))
 
 tss = StartStrandMaker(gene.annotation)
 tss.window = RegionExtender(tss, downstream=window.size, upstream=window.size)
+
+### removes granges that overlapp another feature on the genome
 tss.granges = BedToGRanges(tss.window, values=T)
-tss.granges.s = split(tss.granges, seqnames(tss.granges))
+genes.expand = RegionExtender(gene.annotation, downstream=window.size, upstream=window.size)
+genes.expand = BedToGRanges(genes.expand)
+o = as.matrix(findOverlaps(tss.granges, genes.expand, ignore.strand = T))
+o.ind = tapply(o[,2], o[,1], length)
+tss.granges.non = tss.granges[as.numeric(names(o.ind)[o.ind == 1])]
+
+tss.granges.s = split(tss.granges.non, seqnames(tss.granges.non))
 
 ### removes the random sequences from the genome lengths
 seqlen = seqlengths(Mmusculus)
@@ -67,23 +77,63 @@ for(n in 1:length(filename)){  #repeat
     if(! all(names(sample.coverage) == names(windows.s)))
         stop("List names do not match")
 
+    # getts the views around the tss
     cat("Getting the views...\n")
     v = Views(sample.coverage, ranges(windows.s))
     vm = lapply(v, function(x)viewApply(x, as.vector))
     mat = do.call(rbind, lapply(vm, t))
 
+    # reverses the profiles on the negative strand
     cat("Reversing the matrices...\n")
     strand.ind = strand == "-"
     mat[strand.ind,] = t(apply(mat[strand.ind,], 1, rev))
     
-    tmp.path="/home/guests/abcsan/SubstituteHistones"
-    png(file.path(tmp.path, "tryout.png"), width=2000, height=1200)
-        plot(-5000:5000, colMeans(mat), col="darkorange", type="l")
+    # plots the cumulative profile
+    cat("Drawing profiles...\n")
+    png(file.path(outpath, paste(filename, "w", window.size, "png", sep=".")), width=2000, height=1200)
+        plot(-window.size:window.size, colMeans(mat), col="darkorange", type="l", lwd=2, ylab="mean.coverage", xlab="position", main=sample.name)
+    dev.off()
+    
+    # splits the TSS by valency
+    bimodal = unlist(lapply(windows.s, function(x)paste(values(x)$H3k4me3_0h, values(x)$H3k27me3_0h, sep="_")))
+
+    mat.s = split(as.data.frame(mat), bimodal)
+    mat.s = lapply(mat.s, colMeans)
+
+    # plots separately profiles for each modality
+    cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
+    png(file.path(outpath, paste(filename, "bivalent", "w", window.size, "png", sep=".")), width=2000, height=2000)
+        par(mfrow=c(2,2), cex.main=2.5, cex.lab=2.5, cex.axis=2.5)
+        for(i in 1:length(mat.s)){
+            print(i)
+            plot(-window.size:window.size, mat.s[[i]], col=cols[i], main=names(mat.s)[i], type="l", lwd=2, ylab="mean.coverage", xlab="position")
+        }
+
+    dev.off()
+
+    # plots modality profiles on one plot
+    cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
+    png(file.path(outpath, paste(filename, "bivalent", "oneplot", "w", window.size, "png", sep=".")), width=1200, height=1200)
+        par(cex.main=2, cex.lab=2, cex.axis=2)
+        for(i in 1:length(mat.s)){
+            print(i)
+                                                 
+            if(i == 1){
+                                                
+                plot(-window.size:window.size, mat.s[[i]], col=cols[i], type="l", lwd=2, ylim=c(0, max(unlist(mat.s))), main=sample.name, ylab="mean.coverage", xlab="position")
+                abline(v=0, lwd=2)
+            }else{
+                lines(-window.size:window.size, mat.s[[i]], col=cols[i], lwd=2, )                                 
+            }
+        }
+        legend("topright", fill=cols, legend=names(mat.s))                                         
+
     dev.off()
 
     
-    
-    
+}
+
+cat("Everything went ok! ... bye! \n")
     
     
     
