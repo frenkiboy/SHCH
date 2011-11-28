@@ -63,5 +63,47 @@
     }
 
 
+# -------------------------------------------------------------- #
+# {4}
+    # Converts a bed formatted data frame to a GRanges object
+    BedToGRanges = function(bed, values=FALSE, seqlen=NULL){
+            
+        library(stringr)
+        library(GenomicRanges)
+        # sorts the data frame by chromosome - position
+        bed = bed[order(bed[,1], bed[,2]),]
+        
+        # checks whether the bed file contains the strand column
+        if(any(str_detect(names(bed), 'strand'))){
+            strand=as.character(bed[,str_detect(names(bed), 'strand')])
+        }else{  
+            strand='*'
+        }
+        
+        # checks whether you have provided the chromosome lengths
+        if(!is.null(seqlen)){
+            bed = RegionCorrector(bed, seqlen)
+            ranges = GRanges(
+                             seqnames=as.character(bed[,1]),
+                             ranges=IRanges(start=as.numeric(bed[,2]), end=as.numeric(bed[,3])),
+                             strand=strand,
+                             seqlengths=seqlen
+                            )
+        }else{  
+             ranges = GRanges(
+                              seqnames=as.character(bed[,1]),
+                              ranges=IRanges(start=as.numeric(bed[,2]), end=as.numeric(bed[,3])),
+                              strand=strand
+                              )
+        }
+        
+        # fills the data frame with annotation columns
+        if(values == TRUE){
+            col.ids = setdiff(names(bed), c( "seqnames", "ranges", "strand", "seqlengths", "start", "end", "width",  "element", "chr"))
+            values(ranges) = bed[col.ids]
+        }
+            
+        return(ranges)
+    }
 
 
