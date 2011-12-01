@@ -106,4 +106,3 @@
         return(ranges)
     }
 
-

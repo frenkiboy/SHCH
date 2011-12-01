@@ -9,6 +9,7 @@
 /* Begin PBXFileReference section */
 		8958C8321483BDAD00AFE450 /* Functions.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = Functions.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
 		8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = DrawProfilesAroundTSS.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
+		89F482A11487F2D90097C7D1 /* ProfileFunctions.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = ProfileFunctions.R; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -16,6 +17,7 @@
 			isa = PBXGroup;
 			children = (
 				8958C8321483BDAD00AFE450 /* Functions.R */,
+				89F482A11487F2D90097C7D1 /* ProfileFunctions.R */,
 				8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */,
 			);
 			sourceTree = "<group>";
