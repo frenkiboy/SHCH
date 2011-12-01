@@ -106,3 +106,26 @@
         return(ranges)
     }
 
+# -------------------------------------------------------------- #
+#{5}
+    # Make tilling window over the genome
+    MakeTillingWindow = function(seqlen, window.size = 2000){
+        
+        tile.list = list()
+        for(i in names(seqlen)){
+            cat(i,"\r")
+            start = seq(1, seqlen[i], by=window.size)
+            g = GRanges(i, IRanges(start=start, width=window.size))
+            g = g[end(g) < seqlen[i]]
+            seqlevels(g) = names(seqlen)
+            seqlengths(g) = seqlen
+            tile.list[[i]] = g
+        
+        }
+        cat("\n")
+        tiles = Reduce(c,tile.list)
+        return(tiles)
+    }
+
+
+

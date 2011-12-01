@@ -6,6 +6,8 @@
 # SCRIPT VARIABLES
 window.size = 2000
 
+num.of.rand.reg = 5000
+
 genome.name = "BSgenome.Mmusculus.UCSC.mm9"
 
 outpath="/home/guests/abcsan/SubstituteHistones/Results/ProfileDistributions"
@@ -14,6 +16,7 @@ outpath="/home/guests/abcsan/SubstituteHistones/Results/ProfileDistributions"
 # ------------------------------------------- #
 # loads the functions
 source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
+source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
 library(genome.name, character.only=T)
 
 
@@ -58,6 +61,14 @@ for(i in names(seqlen)){
 }
 
 
+# creating random regions on the chromosome
+wins = MakeTillingWindow(seqlen, window.size*2)
+wins.overlap = as.matrix(findOverlaps(wins, genes.expand))
+wins.non.overlap = wins[-wins.overlap[,1]]
+rand.reg = wins.non.overlap[sample(1:length(wins.non.overlap), num.of.rand.reg)]
+rand.reg.s = split(rand.reg, seqnames(rand.reg))
+
+
 #create filename to decide save name
 filename<-names(l.data)
 chrs = names(seqlen)
@@ -70,23 +81,9 @@ for(n in 1:length(filename)){  #repeat
     
     sample.coverage = l.data[[sample.name]]
     # order the samples so that the coverage and the windows have the same order
-    cat("Ordering the samples...\n")
-    sample.coverage = sample.coverage[order(names(sample.coverage))]
-    windows.s = tss.granges.s[order(names(tss.granges.s))]
-    strand = unlist(lapply(windows.s, function(x)as.vector(strand(x))))
-    if(! all(names(sample.coverage) == names(windows.s)))
-        stop("List names do not match")
-
-    # getts the views around the tss
-    cat("Getting the views...\n")
-    v = Views(sample.coverage, ranges(windows.s))
-    vm = lapply(v, function(x)viewApply(x, as.vector))
-    mat = do.call(rbind, lapply(vm, t))
-
-    # reverses the profiles on the negative strand
-    cat("Reversing the matrices...\n")
-    strand.ind = strand == "-"
-    mat[strand.ind,] = t(apply(mat[strand.ind,], 1, rev))
+    sample.mat = Coverage2Profiles(sample.coverage, tss.granges.s)
+    random.mat = Coverage2Profiles(sample.coverage, rand.reg.s)
+    
     
     # plots the cumulative profile
     cat("Drawing profiles...\n")

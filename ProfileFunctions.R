@@ -7,20 +7,29 @@
 #
 Coverage2Profiles = function(cov, ranges, len=1000){
     
-    list.mat = GetProfiles(cov, ranges)
+    if(!class(cov) == "SimpleRleList")
+        stop("Coverage needs to be a SimpleRleList object")
+    if(!class(ranges) == "GRangesList")
+        stop("Ranges needs to be a granges object")
+    
+    cov = cov[order(names(cov))]
+    ranges = ranges[order(names(ranges))]  
+    
+    if(! all(names(cov) == names(ranges)))
+        stop("List names do not match")
+    
+    mat.list = GetProfiles(cov, ranges)
     
     # if all elements of the list are matrices of the same size then it concatenates them into a data frame and reverses the profile on the - strand
     # if all elements of the list are lists (views from different sizes) - it does the smoothing, to get them into same size matrices, concatenates them and converts them into a data.frame
-    if(all(sapply(list.mat, class)) == "matrix"){
-        if(!nrow(unique(t(sapply(list.mat, dim)))) == 1)
-            stop("All matrices do not have the same dimension")
-        mat = MatListToDataFrame(list.mat, ranges)
+    if(all(sapply(mat.list, class) == "matrix")){
+         mat = MatListToDataFrame(mat.list, ranges)
     
         
-    }else if(all(sapply(list.mat, class)) == "list"){
-        if(any(sapply(list.mat[[i]], length) < len))
+    }else if(all(sapply(mat.list, class)) == "list"){
+        if(any(sapply(mat.list[[i]], length) < len))
         stop("All views have to have the length greater than the smoothing factor")
-        mat = ListListToDataFrame(list.mat, ranges, len=len)
+        mat = ListListToDataFrame(mat.list, ranges, len=len)
         
         
     }else{
@@ -38,21 +47,9 @@ Coverage2Profiles = function(cov, ranges, len=1000){
 #gets the profile from the coverage file and the GRanges object
 GetProfiles = function(cov, ranges){
     
-    if(!class(cov) == "SimpleRleList")
-        stop("Coverage needs to be a SimpleRleList object")
-    if(!class(ranges) == "GRangesList")
-        stop("Ranges needs to be a granges object")
-    
-    cov = cov[order(names(cov))]
-    ranges = ranges[order(names(ranges))]  
-    
-    if(! all(names(sample.coverage) == names(windows.s)))
-        stop("List names do not match")
-    
-    
     # getts the views around the tss
     cat("Getting the views...\n")
-    v = Views(sample.coverage, ranges(windows.s))
+    v = Views(cov, ranges(ranges))
     vm = lapply(v, function(x)viewApply(x, as.vector))
     
     return(vm)
@@ -65,10 +62,10 @@ GetProfiles = function(cov, ranges){
     MatListToDataFrame = function(mat.list, ranges){
     
         cat("Converting the list to the matrix...\n")
-        mat = data.frame(do.call(rbind, lapply(vm, t)))
+        mat = data.frame(do.call(rbind, lapply(mat.list, t)))
         # reverses the profiles on the negative strand
         cat("Reversing the matrices...\n")
-        strand.ind = unlist(lapply(ranges, strand)) == "-"
+        strand.ind = unlist(lapply(ranges, function(x)as.vector(strand(x) == "-")))
         if(nrow(mat) != length(strand.ind))
             stop("Strand and matrix sizes do not match")
         mat[strand.ind,] = t(apply(mat[strand.ind,], 1, rev))
@@ -83,7 +80,7 @@ GetProfiles = function(cov, ranges){
     ListListToDataFrame = function(list.mat, ranges, len){
 
         # gets the strand information from the ranges
-        strand.ind = lapply(ranges, function(x)strand(x) == "-"))
+        strand.ind = lapply(ranges, function(x)as.vector(strand(x) == "-"))
         # reverses each element that is on the - strand
         cat("Reversing the lists...\n")
         for(i in 1:length(list.mat)){
