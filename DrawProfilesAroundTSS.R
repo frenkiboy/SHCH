@@ -88,17 +88,37 @@ for(n in 1:length(filename)){  #repeat
     # order the samples so that the coverage and the windows have the same order
     sample.mat = Coverage2Profiles(sample.coverage, tss.granges.s)
     random.mat = Coverage2Profiles(sample.coverage, rand.reg.s)
-    rand.s = colMeans(random.mat)
     r = rowSums(sample.mat)
     o = head(order(-r), 3)
     sample.mat.rem = sample.mat[-o,]
     
-    sdpos = apply(sample.mat.rem, 2, sd)
+    sample.outpath = file.path(outpath, sample.name)
+        dir.create(sample.outpath, showWarnings=F)
+    
+    
+    mat.list = list(sample.mat.rem, random.mat)
+    names(mat.list) = c(sample.name, "Random")
+    fact.list=list(bimodal.f, NULL)
+    a = rep(1:4, each=2)
+    b=a
+    a[1:length(a) %% 2 ==0] = 5
+    indicator.matrix=cbind(b,a)
+    name=paste(sample.name,"bimodal.png",sep=".") 
+    outpath=sample.outpath 
+    palette=c(cols, random.col)
+    shift=2000
+    split=TRUE
+    
+    bimodal = unlist(lapply(windows.s, function(x)paste(values(x)$H3k4me3_0h, values(x)$H3k27me3_0h, sep="_")))
+    bimodal = bimodal[-o]
+    bimodal.f = as.factor(bimodal)
+    levels(bimodal.f) = c("None","K27","K4","Bimodal")
+
+    
+    
     
     # ----------------------------------------------------- #
     # plots the cumulative profile
-    sample.outpath = file.path(outpath, sample.name)
-        dir.create(sample.outpath, showWarnings=F)
     cat("Drawing profiles...\n")
     png(file.path(sample.outpath, paste(sample.name, "w", window.size, "png", sep=".")), width=1200, height=800)
         

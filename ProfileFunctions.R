@@ -128,7 +128,7 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {6}
     #Takes a matrix and a factor and draws the profiles based on the factor
-    DrawProfiles = function(mat.list, fact.list=NULL, indicator.mat=NULL name, outpath, palette, shift, split=FALSE){
+    DrawProfiles = function(mat.list, fact.list=NULL, indicator.matrix=NULL name, outpath, palette, shift, split=FALSE){
         
         if(is.null(mat.list))
             stop("The list of matrices need to be designated")
@@ -136,8 +136,16 @@ GetProfiles = function(cov, ranges){
             stop("The output name needs to be designated")
         if(is.null(outpath))
             stop("The output directory needs to be designated")
+        if(!all(sapply(mat.list, is.matrix)))
+            stop("All elements of mat list need to be matrices")
         profile.list = CalculateColMeans(mat.list, fact.list)
-        ProfilePlotter(l=profile.list, m=indicator.matrix, split=split, outpath=outpath, name=name, cols=cols, shift=shift))
+        ProfilePlotter(l=profile.list, 
+                       m=indicator.matrix, 
+                       split=split, 
+                       outpath=outpath, 
+                       name=name, 
+                       palette=palette, 
+                       shift=shift)
             
     }
 
@@ -145,19 +153,22 @@ GetProfiles = function(cov, ranges){
 # {7}
     # Takes a list of matrices and a list of factors and returns a list of caluculated colmeans for each matrix for each factor
     CalculateColMeans = function(mat.list, fact.list=NULL){
+        
 
         cat("Calculating cumulative profiles\n")
         colmeans.list = list()
         for(i in 1:length(mat.list)){
                 
-            cat(i/length(mat.list),"\r")
-            list.len = length(colsum.list)
-            if(!is.null(fact.list) && !is.null(fact.list[[i]])){
+            cat(i,"\r")
+            if(!is.null(fact.list) & !is.null(fact.list[[i]])){
+                if(nrow(mat.list[[i]]) != length(fact.list[[i]]))
+                    stop("Each profile does not have a designated factor")
                 colmeans.tmp = lapply(split(mat.list[[i]], fact.list[[i]]), colMeans)
-                colmeans.list = c(colmeans.list, lapply(split(mat.list[[i]], fact.list[[i]]), colMeans))
+                colmeans.list = c(colmeans.list, colmeans.tmp)
                 
             }else{
-                colmeans.list = c(colmeans.list, (mat.list[[i]]))
+                colmeans.list = c(colmeans.list, list(colMeans(mat.list[[i]])))
+                names(colmeans.list)[length(colmeans.list)] = names(mat.list)[i]
                 
             }
         }
@@ -168,53 +179,41 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {8}
     # Takes a list of vectors (mean coverage over a window), and a designator matrix which tells which profiles to plot on the same plot
-    ProfilePlotter = function(l = NULL, m = NULL, split=F, outpath, name, cols, shift=0){
-
-        if(!is.list(l))
-            stop("l needs to be a list")        
-        
-        
-        if(split == FALSE){
+        ProfilePlotter = function(l = NULL, m = NULL, split=F, outpath, name, palette, shift=0){
                 
-            cat("Drawing the profiles without the split...\n")
-            png(file.path(outpath, name), width=1200, height=800)
-            for(i in 1:length(l))
+            if(!is.list(l))
+                stop("l needs to be a list")        
                 
-                if(i == 1){
-                    ylim = c(min(unlist(l, use.names=F)), max(unlist(l, use.names=F)))
-                    x = 1:length(l[[i]]) - shift
-                    plot(x, l[[i]], cols[[i]], type="l", lwd=2, ylab="mean.coverage", xlab="position", main=name, ylim=ylim)
-                }else{
-                    lines(x, l.tmp[[j]], col=cols[[i]], lwd=2)
-                }
-            }
-            legend("topright", fill=cols, legend=names(l))
-            
-        
-        }else{
-
+                
+            if(split == FALSE)
+                m = cbind(1,1:length(l))
+            if(split == TRUE & is.null(m))
+                stop("When split is true indicator matrix must be given")
+                
             if(!is.matrix(m))
                 stop("m needs to be matrix")
             if(any(!m %in% 1:length(l)))
                 stop("matrix has invalid combinations for plotting")
-            cat("Drawing the profiles with split...\n")
+                cat("Drawing the profiles with split...\n")
             nclass = unique(m[,1])
-            png(file.path(outpath, name), width=1000, height=400*nclass)
-            
-            par(mfrow=c(nclass, 1)
-            for(i in 1:nclass){
-                
+            png(file.path(outpath, name), width=1000, height=750*nclass)
+                    
+            par(mfrow=c(length(nclass), 1))
+            for(i in nclass){
+                        
                 m.tmp = m[m[,1] == i,]
                 l.tmp = l[m.tmp[,2]]
-                for(j in m.tmp[,2]){
+                palette.tmp = palette[m.tmp[,2]]
+                for(j in 1:length(l.tmp)){
                     if(j == 1){
                         ylim = c(min(unlist(l.tmp, use.names=F)), max(unlist(l.tmp, use.names=F)))
-                        x = 1:length(l[[i]]) - shift
-                        plot(x, l.tmp[[j]], cols[[j]], type="l", lwd=2, ylab="mean.coverage", xlab="position", main=names(l.tmp)[j], ylim=ylim)
+                        x = 0:(length(l[[i]])-1) - shift
+                        plot(x, l.tmp[[j]], col=palette.tmp[j], type="l", lwd=2, ylab="mean.coverage", xlab="position", main=names(l.tmp)[j], ylim=ylim)
                     }else{
-                        lines(x, l.tmp[[j]], col=cols[[j]], lwd=2)
+                        lines(x, l.tmp[[j]], col=palette.tmp[j], lwd=2)
+                    }
                 }
+                legend("topright", fill=palette.tmp, legend=names(l.tmp))
             }
+            dev.off()
         }
-        dev.off()
-    }
