@@ -115,7 +115,7 @@
         for(i in names(seqlen)){
             cat(i,"\r")
             start = seq(1, seqlen[i], by=window.size)
-            g = GRanges(i, IRanges(start=start, width=window.size))
+            g = GRanges(i, IRanges(start=start, width=window.size), strand="+")
             g = g[end(g) < seqlen[i]]
             seqlevels(g) = names(seqlen)
             seqlengths(g) = seqlen

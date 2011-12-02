@@ -12,12 +12,16 @@ genome.name = "BSgenome.Mmusculus.UCSC.mm9"
 
 outpath="/home/guests/abcsan/SubstituteHistones/Results/ProfileDistributions"
 
+pal = brewer.pal(9, "Set1")
+
+random.col = pal[9]
 
 # ------------------------------------------- #
 # loads the functions
 source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
 source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
 library(genome.name, character.only=T)
+library(RColorBrewer)
 
 
 # ------------------------------------------- #
@@ -62,11 +66,12 @@ for(i in names(seqlen)){
 
 
 # creating random regions on the chromosome
-wins = MakeTillingWindow(seqlen, window.size*2)
+wins = MakeTillingWindow(seqlen, (window.size*2+1))
 wins.overlap = as.matrix(findOverlaps(wins, genes.expand))
 wins.non.overlap = wins[-wins.overlap[,1]]
 rand.reg = wins.non.overlap[sample(1:length(wins.non.overlap), num.of.rand.reg)]
 rand.reg.s = split(rand.reg, seqnames(rand.reg))
+
 
 
 #create filename to decide save name
@@ -83,47 +88,71 @@ for(n in 1:length(filename)){  #repeat
     # order the samples so that the coverage and the windows have the same order
     sample.mat = Coverage2Profiles(sample.coverage, tss.granges.s)
     random.mat = Coverage2Profiles(sample.coverage, rand.reg.s)
+    rand.s = colMeans(random.mat)
+    r = rowSums(sample.mat)
+    o = head(order(-r), 3)
+    sample.mat.rem = sample.mat[-o,]
     
+    sdpos = apply(sample.mat.rem, 2, sd)
     
+    # ----------------------------------------------------- #
     # plots the cumulative profile
+    sample.outpath = file.path(outpath, sample.name)
+        dir.create(sample.outpath, showWarnings=F)
     cat("Drawing profiles...\n")
-    png(file.path(outpath, paste(sample.name, "w", window.size, "png", sep=".")), width=2000, height=1200)
-        plot(-window.size:window.size, colMeans(mat), col="darkorange", type="l", lwd=2, ylab="mean.coverage", xlab="position", main=sample.name)
+    png(file.path(sample.outpath, paste(sample.name, "w", window.size, "png", sep=".")), width=1200, height=800)
+        
+        sample.col.means=colMeans(sample.mat.rem)
+        ylim = c(min(sample.col.means - sdpos), max(sample.col.means + sdpos))
+        plot(-window.size:window.size, sample.col.means, col="darkorange", type="l", lwd=2, ylab="mean.coverage", xlab="position", main=sample.name, ylim=ylim)
+        lines(-window.size:window.size, rand.s, , col="cornflowerblue")
+    #   lines(-window.size:window.size, sample.col.means - sdpos, , col="darkorange3")
+    #lines(-window.size:window.size, sample.col.means + sdpos, , col="darkorange3")
     dev.off()
-    
+
+    # ----------------------------------------------------- #
     # splits the TSS by valency
     bimodal = unlist(lapply(windows.s, function(x)paste(values(x)$H3k4me3_0h, values(x)$H3k27me3_0h, sep="_")))
-
-    mat.s = split(as.data.frame(mat), bimodal)
+    bimodal = bimodal[-o]
+    bimodal.f = as.factor(bimodal)
+    levels(bimodal.f) = c("None","K27","K4","Bimodal")
+    
+    mat.s = split(as.data.frame(sample.mat.rem), bimodal.f)
     mat.s = lapply(mat.s, colMeans)
+    
 
     # plots separately profiles for each modality
-    cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
-    png(file.path(outpath, paste(sample.name, "bivalent", "w", window.size, "png", sep=".")), width=2000, height=2000)
+    cols = pal[1:4]
+    png(file.path(sample.outpath, paste(sample.name, "bivalent", "w", window.size, "png", sep=".")), width=2000, height=2000)
         par(mfrow=c(2,2), cex.main=2.5, cex.lab=2.5, cex.axis=2.5)
         for(i in 1:length(mat.s)){
             print(i)
-            plot(-window.size:window.size, mat.s[[i]], col=cols[i], main=names(mat.s)[i], type="l", lwd=2, ylab="mean.coverage", xlab="position")
+            ylim=c(min(mat.s[[i]], rand.s), max(mat.s[[i]], rand.s))
+            plot(-window.size:window.size, mat.s[[i]], col=cols[i], main=names(mat.s)[i], type="l", lwd=2, ylab="mean.coverage", xlab="position", ylim=ylim)
+            lines(-window.size:window.size, rand.s, , col=random.col)
+
         }
 
     dev.off()
 
+    # ----------------------------------------------------- #
     # plots modality profiles on one plot
-    cols = c("darkorange","cornflowerblue","firebrick","chartreuse")
-    png(file.path(outpath, paste(sample.name, "bivalent", "oneplot", "w", window.size, "png", sep=".")), width=1200, height=1200)
+    cols = pal[1:4]
+    png(file.path(sample.outpath, paste(sample.name, "bivalent", "oneplot", "w", window.size, "png", sep=".")), width=1200, height=1200)
         par(cex.main=2, cex.lab=2, cex.axis=2)
         for(i in 1:length(mat.s)){
             print(i)
-                                                 
             if(i == 1){
-                                                
-                plot(-window.size:window.size, mat.s[[i]], col=cols[i], type="l", lwd=2, ylim=c(0, max(unlist(mat.s))), main=sample.name, ylab="mean.coverage", xlab="position")
+                ylim=c(min(unlist(mat.s, rand.s)), max(unlist(mat.s, rand.s)))
+                plot(-window.size:window.size, mat.s[[i]], col=cols[i], type="l", lwd=2, ylim=ylim, main=sample.name, ylab="mean.coverage", xlab="position")
                 abline(v=0, lwd=2)
             }else{
                 lines(-window.size:window.size, mat.s[[i]], col=cols[i], lwd=2, )                                 
             }
         }
-        legend("topright", fill=cols, legend=names(mat.s))                                         
+        lines(-window.size:window.size, rand.s, , col=random.col)
+
+        legend("topright", fill=c(cols, random.col), legend=c(names(mat.s), "Random"), cex=2)                                         
 
     dev.off()
 

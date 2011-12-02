@@ -1,0 +1,127 @@
+# INFO: Calculates the statistics for various gene features
+# DATE: 02.12.2011.
+# AUTH: ABC
+
+# -------------------------------------------------------- # 
+# input files
+
+gene.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/AnnotatedGenes/Ens.genes.annot.fc2.txt"
+
+outpath = "/home/guests/abcsan/SubstituteHistones/Results/DescriptiveStatistics"
+
+
+# -------------------------------------------------------- # 
+# reads in the gene annotations with transcription factor overlap
+genes = read.table(gene.path, header=T)
+#expr = rowSums(cbind(genes$X0h.rpkm, genes$X72h.rpkm))
+#genes = genes[order(-expr),]
+#genes = genes[!duplicated(genes$ens.gene.id),]
+#w = genes$end - genes$start + 1
+#genes.short = genes[w < 200,]
+#genes = genes[!w < 200, ]
+
+
+
+# remove genes that have double transcripts in the genes table
+# corresponds to the genes that had the isophorm change
+genes.0h = genes.0h[order(-genes.0h$X0h.rpkm),]
+genes.0h = genes.0h[!duplicated(genes.0h$ens.gene.id),]
+
+genes.72h = genes.72h[order(-genes.72h$X0h.rpkm),]
+genes.72h = genes.72h[!duplicated(genes.72h$ens.gene.id),]
+
+
+# -------------------------------------------------------- # 
+# calculates the number of gene in each histone modification category
+bivalent.0 = as.factor(paste(genes$H3k4me3_0h, genes$H3k27me3_0h, sep="_"))
+levels(bivalent.0) = c("None","K27","K4","Bivalent")
+
+bivalent.72 = as.factor(paste(genes$H3k4me3_72h, genes$H3k27me3_72h, sep="_"))
+levels(bivalent.72) = c("None","K27","K4","Bivalent")
+
+cpgs = genes$cpg.isl.prom
+
+table(bivalent.0, bivalent.72, cpgs)
+t = table(cpgs, bivalent.72, bivalent.0)
+addmargins(t)
+
+
+# -------------------------------------------------------- # 
+# separate biotypes
+table(genes$biotype)
+
+
+# -------------------------------------------------------- # 
+# just protein coding genes
+protein-coding gene
+
+# -------------------------------------------------------- # 
+# cpg island--histone modification(0h)
+bivalent.0 = as.factor(paste(genes.0h$H3k4me3_0h, genes$H3k27me3_0h, sep="_"))
+levels(bivalent.0) = c("None","K27","K4","Bivalent")
+
+cpgs = genes$cpg.isl.prom
+
+table(bivalent.0, cpgs)
+
+
+# -------------------------------------------------------- # 
+# TATA　box--histone modification(0h)
+bivalent.0 = as.factor(paste(genes.0h$H3k4me3_0h, genes$H3k27me3_0h, sep="_"))
+levels(bivalent.0) = c("None","K27","K4","Bivalent")
+
+tata = genes$tata.box
+
+table(bivalent.0, tata)
+
+# -------------------------------------------------------- # 
+# gene expression-histone modification(0h)
+library(RColorBrewer)
+expr.0h.outpath = file.path(outpath, "Expression_0h")
+    dir.create(expr.0h.outpath)
+
+bivalent.0 = as.factor(paste(genes.0h$H3k4me3_0h, genes.0h$H3k27me3_0h, sep="_"))
+levels(bivalent.0) = c("None","K27","K4","Bivalent")
+d = genes.0h
+d$bivalent.0h =bivalent.0
+d$X0h.rpkm.log = log10(d$X0h.rpkm + 1)
+
+pal = brewer.pal(4, "Set1")
+png(file.path(expr.0h.outpath, "ExpressionHistMod.0h.png"), width=800, height=600)
+    boxplot(X0h.rpkm.log ~ bivalent.0, data=d, col=pal, varwidth=T, pars=list(pch=20, cex=.5), main="Expression Histone Modification 0h")
+dev.off()
+
+
+
+# -------------------------------------------------------- # 
+# gene expression - cpg island(0h)
+library(RColorBrewer)
+expr.0h.outpath = file.path(outpath, "Expression_0h")
+dir.create(expr.0h.outpath)
+
+
+d= genes.0h
+d$X0h.rpkm.log = log10(d$X0h.rpkm + 1)
+pal = brewer.pal(4, "Set1")
+png(file.path(expr.0h.outpath, "ExpressionCpGIsl.0h.png"), width=800, height=600)
+boxplot(X0h.rpkm.log  ~ cpg.isl.prom, data=d, col=pal, varwidth=T, pars=list(pch=20, cex=.5), main="Expression CpG Island Promoter 0h")
+dev.off()
+
+# -------------------------------------------------------- # 
+# gene expression - tata box(0h)
+library(RColorBrewer)
+expr.0h.outpath = file.path(outpath, "Expression_0h")
+dir.create(expr.0h.outpath)
+
+
+d= genes.0h
+d$X0h.rpkm.log = log10(d$X0h.rpkm + 1)
+pal = brewer.pal(4, "Set1")
+png(file.path(expr.0h.outpath, "ExpressionTataBox.0h.png"), width=800, height=600)
+boxplot(X0h.rpkm.log  ~ tata.box, data=d, col=pal, varwidth=T, pars=list(pch=20, cex=.5), main="Expression tata box 0h")
+dev.off()
+
+
+
+
+
