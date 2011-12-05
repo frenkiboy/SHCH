@@ -10,6 +10,7 @@
 		8958C8321483BDAD00AFE450 /* Functions.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = Functions.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
 		8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = DrawProfilesAroundTSS.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
 		896902B514890C00009AAB04 /* GeneAnnotationStatistics */ = {isa = PBXFileReference; lastKnownFileType = text; path = GeneAnnotationStatistics; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		89A6336F148BE51B0003FA92 /* DrawProfilesAroundTFPeaks */ = {isa = PBXFileReference; lastKnownFileType = text; path = DrawProfilesAroundTFPeaks; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
 		89F482A11487F2D90097C7D1 /* ProfileFunctions.R */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.rez; path = ProfileFunctions.R; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.python; };
 /* End PBXFileReference section */
 
@@ -20,6 +21,7 @@
 				8958C8321483BDAD00AFE450 /* Functions.R */,
 				89F482A11487F2D90097C7D1 /* ProfileFunctions.R */,
 				8958C8331483BFF200AFE450 /* DrawProfilesAroundTSS.R */,
+				89A6336F148BE51B0003FA92 /* DrawProfilesAroundTFPeaks */,
 				896902B514890C00009AAB04 /* GeneAnnotationStatistics */,
 			);
 			sourceTree = "<group>";

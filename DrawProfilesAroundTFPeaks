@@ -1,0 +1,108 @@
+# INFO: Draws chipseq profiles around TSS
+# DATE: 28.11.2011.
+# AUTH: ABC
+
+# ------------------------------------------- #
+# SCRIPT VARIABLES
+window.size = 2000
+
+num.of.rand.reg = 5000
+
+peaks.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/Chen_2008_CisgenomePeaks/Peaks/"
+
+outpath="/home/guests/abcsan/SubstituteHistones/Results/DistributionsAroundChenTF"
+
+# ------------------------------------------- #
+# loads the functions
+source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
+source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
+library(RColorBrewer)
+
+# ------------------------------------------- #
+# loads the data
+library("BSgenome.Mmusculus.UCSC.mm9")
+seqlen = seqlengths(Mmusculus)
+input.file = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/NormalizedCoverage/FugakuHistones.samp24.uniqTRUEReducedNormalized.bwa.RData"
+Assigner(input.file, "l.data")
+
+input.ind=grepl("input", names(l.data))
+cov.input = l.data[input.ind]
+cov.data = l.data[!input.ind]
+
+# reading of the peak files and prepearing the data for the analysis
+peak.files= list.files(peaks.path, pattern=".cod$", full.names=T, recursive=T)
+peaks = lapply(peak.files, read.table, header=T)
+names(peaks) = sub("_peak.cod","",basename(peak.files))
+l.peaks = list()
+for(i in names(peaks)){
+    print(i)
+    peaks.tmp = peaks[[i]]
+    peaks.tmp$start = peaks.tmp$peak_summit - window.size
+    peaks.tmp$end   = peaks.tmp$peak_summit + window.size
+    peaks.tmp = peaks.tmp[,c("chromosome","start","end")]
+    names(peaks.tmp)[1] = "chr"
+    l.tmp = list()
+    cat("Removing off chromosomes\n")
+    for(chr in unique(peaks.tmp$chr)){
+        cat(chr,"\n")
+        tmp = peaks.tmp[peaks.tmp$chr == chr,]
+        l.tmp[[chr]] = tmp[tmp$end < seqlen[chr],]
+    }
+    peaks[[i]] = do.call(rbind, l.tmp)
+}
+
+
+sample.names = names(cov.data)
+b3.ind = grepl("b3", sample.names) 
+sample.names = unique(sub("_.+","", sample.names[!b3.ind]))
+
+sample.palette = brewer.pal(3, "Set1")[1:2]
+for(i in 2:length(sample.names)){
+
+
+    sample = sample.names[i]
+    print(sample)
+    cov.sample = cov.data[grepl(paste("^",sample,"_", sep=""), names(cov.data)) & !grepl("b3", names(cov.data))]
+    if(length(cov.sample) != 2)
+        stop("The number of samples is not 2")
+
+    sample.outpath = file.path(outpath, sample)
+        dir.create(sample.outpath, showWarnings=F)
+
+    for(j in seq(along=peaks)){
+        
+        chip.name = names(peaks)[j]
+        print(chip.name)
+        chip = peaks[[chip.name]]
+        chip.ranges = BedToGRanges(chip)
+        o = countOverlaps(chip.ranges, chip.ranges)
+        chip.ranges = chip.ranges[o == 1]
+        chip.ranges.s = split(chip.ranges, seqnames(chip.ranges))
+        chrs = intersect(names(chip.ranges.s), names(cov.sample[[1]]))
+        chip.ranges.s = chip.ranges.s[chrs]
+        
+        chip.profiles = lapply(cov.sample, function(x)Coverage2Profiles(x[chrs], chip.ranges.s)) 
+        r = lapply(chip.profiles, rowSums)
+        r = lapply(r, function(x)head(order(-x), 10))
+        chip.profiles.filt = lapply(names(chip.profiles), function(x)chip.profiles[[x]][-r[[x]],])
+        names(chip.profiles.filt) = names(chip.profiles)
+        DrawProfiles(mat.list=chip.profiles.filt, 
+                     fact.list=list(NULL, NULL), 
+                     indicator.matrix=NULL, 
+                     name=paste(sample, chip.name, "w", window.size, "png", sep="."), 
+                     outpath=sample.outpath, 
+                     palette=sample.palette, 
+                     shift=window.size, 
+                     split=FALSE)
+
+        
+    }
+
+
+}
+
+
+
+
+
+

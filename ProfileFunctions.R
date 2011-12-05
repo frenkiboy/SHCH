@@ -52,6 +52,10 @@ GetProfiles = function(cov, ranges){
     cat("Getting the views...\n")
     v = Views(cov, ranges(ranges))
     vm = lapply(v, function(x)viewApply(x, as.vector))
+    mind = sapply(vm, is.matrix)
+    if(!all(mind)){
+        vm[!mind] = lapply(vm[!mind], function(x)matrix(x, ncol=1))
+    }
     
     return(vm)
 }
@@ -128,7 +132,7 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {6}
     #Takes a matrix and a factor and draws the profiles based on the factor
-    DrawProfiles = function(mat.list, fact.list=NULL, indicator.matrix=NULL name, outpath, palette, shift, split=FALSE){
+    DrawProfiles = function(mat.list, fact.list=NULL, indicator.matrix=NULL, name, outpath, palette, shift, split=FALSE){
         
         if(is.null(mat.list))
             stop("The list of matrices need to be designated")
@@ -136,8 +140,7 @@ GetProfiles = function(cov, ranges){
             stop("The output name needs to be designated")
         if(is.null(outpath))
             stop("The output directory needs to be designated")
-        if(!all(sapply(mat.list, is.matrix)))
-            stop("All elements of mat list need to be matrices")
+        
         profile.list = CalculateColMeans(mat.list, fact.list)
         ProfilePlotter(l=profile.list, 
                        m=indicator.matrix, 
@@ -155,7 +158,11 @@ GetProfiles = function(cov, ranges){
     CalculateColMeans = function(mat.list, fact.list=NULL){
         
 
+        if(any(sapply(names(mat.list), is.null)))
+            stop("All mat.list elements have to have designated names")
+        
         cat("Calculating cumulative profiles\n")
+        
         colmeans.list = list()
         for(i in 1:length(mat.list)){
                 
@@ -196,9 +203,12 @@ GetProfiles = function(cov, ranges){
                 stop("matrix has invalid combinations for plotting")
                 cat("Drawing the profiles with split...\n")
             nclass = unique(m[,1])
-            png(file.path(outpath, name), width=1000, height=750*nclass)
-                    
-            par(mfrow=c(length(nclass), 1))
+            png(file.path(outpath, name), width=1000, height=max(c(1000, 1000*(length(nclass)/4))))
+            
+            if(split == TRUE)
+                par(mfrow=c(length(nclass), 1),cex=1.25)
+        
+        
             for(i in nclass){
                         
                 m.tmp = m[m[,1] == i,]

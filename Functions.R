@@ -127,5 +127,16 @@
         return(tiles)
     }
 
+# -------------------------------------------------------------- #
+#{6}
+    # Creates random regions and takes only those that do not overlap any segment
+    CreateRandomRegions = function(seqlen, window.size, ranges){
+        
+        wins = MakeTillingWindow(seqlen, (window.size*2+1))
+        wins.overlap = as.matrix(findOverlaps(wins, ranges))
+        wins.non.overlap = wins[-wins.overlap[,1]]
+        rand.reg = wins.non.overlap[sample(1:length(wins.non.overlap), num.of.rand.reg)]
+        rand.reg.s = split(rand.reg, seqnames(rand.reg))
+        return(rand.reg.s)
 
-
+    }   
