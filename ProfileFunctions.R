@@ -203,10 +203,10 @@ GetProfiles = function(cov, ranges){
                 stop("matrix has invalid combinations for plotting")
                 cat("Drawing the profiles with split...\n")
             nclass = unique(m[,1])
-            png(file.path(outpath, name), width=1000, height=max(c(1000, 1000*(length(nclass)/4))))
+            png(file.path(outpath, name), width=1000, height=max(c(1000, 350*(length(nclass)))))
             
             if(split == TRUE)
-                par(mfrow=c(length(nclass), 1),cex=1.25)
+                par(mfrow=c(length(nclass), 1),cex=0.30*length(nclass))
         
         
             for(i in nclass){

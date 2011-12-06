@@ -3,6 +3,15 @@
 # AUTH: ABC
 
 # ------------------------------------------- #
+# loads the functions
+source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
+source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
+library(genome.name, character.only=T)
+library(RColorBrewer)
+
+
+
+# ------------------------------------------- #
 # SCRIPT VARIABLES
 window.size = 2000
 
@@ -16,12 +25,6 @@ pal = brewer.pal(9, "Set1")
 
 random.col = pal[9]
 
-# ------------------------------------------- #
-# loads the functions
-source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
-source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
-library(genome.name, character.only=T)
-library(RColorBrewer)
 
 
 # ------------------------------------------- #
@@ -35,7 +38,9 @@ cov.data = l.data[!input.ind]
 # loads the gene annotation
 gene.annotation.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/AnnotatedGenes/Ens.genes.annot.fc2.txt"
 gene.annotation<-read.delim(gene.annotation.path, header=T, as.is=T) 
-
+# selects the transcripts with the maximum sum of isoforms
+gene.annotation = gene.annotation[order(-rowSums(gene.annotation[,c("X0h.rpkm","X72h.rpkm")])),]
+gene.annotation = gene.annotation[!duplicated(gene.annotation$ens.gene.id),]
 
 # ------------------------------------------- #
 # check the sample names 
@@ -61,7 +66,7 @@ seqlen = seqlen[names(seqlen) != "chrM"]
 
 ### removes the windows that fell of the chromosomes
 for(i in names(seqlen)){
-    cat(i,"\n")
+    cat(i,"\r")
     granges.tmp = tss.granges.s[[i]]
     granges.tmp = granges.tmp[as.vector(end(granges.tmp)) < seqlen[i] & start(granges.tmp) > 0]
     tss.granges.s[[i]] = granges.tmp
@@ -121,7 +126,7 @@ for(n in 1:length(filename)){  #repeat
 
 
     
-    sample.palette=c(cols, random.col)
+    sample.palette=c(pal[1:4], random.col)
     
     DrawProfiles(mat.list=mat.list, 
                   fact.list=fact.list, 
@@ -203,33 +208,33 @@ for(n in 1:length(filename)){  #repeat
 
     # -------------------------------------------------------- # 
     # just protein coding genes
-    biotypes = values(tss.to.use)$biotype
-    biotypes.na = is.na(biotypes)
-    biotypes = biotypes[! biotypes.na]
-    biotypes.ind = biotypes == "polymorphic_pseudogene" | biotypes == "IG_C_gene" | biotypes == "IG_J_gene" | biotypes == "IG_V_gene"
-    biotypes = biotypes[!biotypes.ind]
-    
-    bimodal = paste(values(tss.to.use)$H3k4me3_0h, values(tss.to.use)$H3k27me3_0h, sep="_")))
-    bimodal.f = as.factor(bimodal)
-    levels(bimodal.f) = c("None","K27","K4","Bimodal")
-    bimodal.f.pc = bimodal.f[!biotypes.na]
-    bimodal.f.pc = bimodal.f.pc[biotypes.pc]
-
-    sample.mat.rem.biotype = sample.mat.rem[!biotypes.na,]
-    sample.mat.rem.biotype.pc = sample.mat.rem.biotype[biotypes.pc,]
-    mat.list.bio.pc = list(sample.mat.rem.biotype.pc, Random=random.mat)
-
-    fact.list.pc=list(bimodal.f.pc, NULL)
-    sample.palette.pc=c(cols, random.col)
-
-    DrawProfiles(mat.list=mat.list.bio.pc, 
-                 fact.list=fact.list.pc, 
-                 indicator.matrix=NULL, 
-                 name=paste(sample.name, "prot.cod","bimodal", "png", sep="."), 
-                 outpath=sample.outpath, 
-                 palette=sample.palette.pc, 
-                 shift=2000, 
-                 split=FALSE)
+#    biotypes = values(tss.to.use)$biotype
+#    biotypes.na = is.na(biotypes)
+#    biotypes = biotypes[! biotypes.na]
+#    biotypes.ind = biotypes == "polymorphic_pseudogene" | biotypes == "IG_C_gene" | biotypes == "IG_J_gene" | biotypes == "IG_V_gene"
+#    biotypes = biotypes[!biotypes.ind]
+#    
+#    bimodal = paste(values(tss.to.use)$H3k4me3_0h, values(tss.to.use)$H3k27me3_0h, sep="_")
+#    bimodal.f = as.factor(bimodal)
+#    levels(bimodal.f) = c("None","K27","K4","Bimodal")
+#    bimodal.f.pc = bimodal.f[!biotypes.na]
+#    bimodal.f.pc = bimodal.f.pc[biotypes.pc]
+#
+#    sample.mat.rem.biotype = sample.mat.rem[!biotypes.na,]
+#    sample.mat.rem.biotype.pc = sample.mat.rem.biotype[biotypes.pc,]
+#    mat.list.bio.pc = list(sample.mat.rem.biotype.pc, Random=random.mat)
+#
+#    fact.list.pc=list(bimodal.f.pc, NULL)
+#    sample.palette.pc=c(cols, random.col)
+#
+#    DrawProfiles(mat.list=mat.list.bio.pc, 
+#                 fact.list=fact.list.pc, 
+#                 indicator.matrix=NULL, 
+#                 name=paste(sample.name, "prot.cod","bimodal", "png", sep="."), 
+#                 outpath=sample.outpath, 
+#                 palette=sample.palette.pc, 
+#                 shift=2000, 
+#                 split=FALSE)
 
     # -------------------------------------------------------- # 
     # cpg island--histone modification(0h)
@@ -342,7 +347,7 @@ for(n in 1:length(filename)){  #repeat
 
     mat.list.expr = list(sample.mat.rem, Random=random.mat)
     fact.list.expr = list(expr.class, NULL)
-    expr.palette = c(brewer.pal(nclass), "Set1"), random.col)
+    expr.palette = c(brewer.pal(nclass, "Set1"), random.col)
 
     DrawProfiles(mat.list=mat.list.expr, 
              fact.list=fact.list.expr, 
@@ -366,7 +371,7 @@ for(n in 1:length(filename)){  #repeat
                  shift=2000, 
                  split=TRUE) 
         
-    }
+    
 
 
     # -------------------------------------------------------- # 
@@ -417,10 +422,6 @@ for(n in 1:length(filename)){  #repeat
                      palette=expr.palette, 
                      shift=2000, 
                      split=TRUE)
-
-        
-
-    }
 
     
     # -------------------------------------------------------- # 
