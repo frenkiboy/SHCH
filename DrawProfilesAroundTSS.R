@@ -64,6 +64,7 @@ seqlen = seqlengths(Mmusculus)
 seqlen = seqlen[!grepl("random", names(seqlen))]
 seqlen = seqlen[names(seqlen) != "chrM"]
 
+
 ### removes the windows that fell of the chromosomes
 for(i in names(seqlen)){
     cat(i,"\r")

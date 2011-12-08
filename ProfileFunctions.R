@@ -27,7 +27,7 @@ Coverage2Profiles = function(cov, ranges, len=1000){
          mat = MatListToDataFrame(mat.list, ranges)
     
         
-    }else if(all(sapply(mat.list, class)) == "list"){
+    }else if(all(sapply(mat.list, class) == "list")){
         if(any(sapply(mat.list[[i]], length) < len))
         stop("All views have to have the length greater than the smoothing factor")
         mat = ListListToDataFrame(mat.list, ranges, len=len)
@@ -86,26 +86,28 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {4}
     # Converts a list of lists to a data frame and reverses the profiles on the - strand
-    ListListToDataFrame = function(list.mat, ranges, len){
+    ListListToDataFrame = function(mat.list, ranges, len){
 
         # gets the strand information from the ranges
         strand = strand(ranges)
+        strand = lapply(strand, as.vector)
         strand = lapply(strand, function(x)x[x == "*"] = "+")
         strand.ind = lapply(strand, function(x)x == "-")
         # reverses each element that is on the - strand
         cat("Reversing the lists...\n")
-        for(i in 1:length(list.mat)){
+        for(i in 1:length(mat.list)){
             if(any(strand.ind[[i]]))
-                list.mat[[i]][strand.ind[[i]]] = lapply(list.mat[[i]][strand.ind[[i]]], rev)
+                mat.list[[i]][strand.ind[[i]]] = lapply(mat.list[[i]][strand.ind[[i]]], rev)
         }
         
         cat("Smoothing the profiles...\n")
-        for(i in 1:length(list.mat)){
-            if(any(sapply(list.mat[[i]], length) < len))
+        for(i in 1:length(mat.list)){
+            cat(i,"\r")
+            if(any(sapply(mat.list[[i]], length) < len))
                 stop("All views have to have the length greater than the smoothing factor")
-            list.mat[[i]] = lapply(list.mat[[i]], ScalerLarge, len)
+            mat.list[[i]] = lapply(mat.list[[i]], ScalerLarge, len)
         }
-        mat = data.frame(do.call(rbind, list.mat))
+        mat = do.call(rbind, lapply(mat.list, function(x)data.frame(do.call(rbind, x))))
         return(mat)
         
     }
@@ -118,8 +120,8 @@ GetProfiles = function(cov, ranges){
     # takes an Rle object and smooths it
     ScalerLarge = function(a, len){
         
-        s = unique(ceiling(seq(1, length(a), length.out=len)))
-        win = floor(length(a)/len - 1)
+        s = unique(ceiling(seq(1, length(a)-1, length.out=len)))
+        win = floor(length(a)/len)
         win.starts = ceiling(s-win/2)
         win.starts[1] = 1
         win.ends = ceiling(s+win/2)
@@ -186,7 +188,7 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {8}
     # Takes a list of vectors (mean coverage over a window), and a designator matrix which tells which profiles to plot on the same plot
-        ProfilePlotter = function(l = NULL, m = NULL, split=F, outpath, name, palette, shift=0){
+        ProfilePlotter = function(l = NULL, m = NULL, split=FALSE, outpath, name, palette, shift=0){
                 
             if(!is.list(l))
                 stop("l needs to be a list")        
@@ -201,23 +203,26 @@ GetProfiles = function(cov, ranges){
                 stop("m needs to be matrix")
             if(any(!m %in% 1:length(l)))
                 stop("matrix has invalid combinations for plotting")
-                cat("Drawing the profiles with split...\n")
             nclass = unique(m[,1])
-            png(file.path(outpath, name), width=1000, height=max(c(1000, 350*(length(nclass)))))
-            
-            if(split == TRUE)
-                par(mfrow=c(length(nclass), 1),cex=0.30*length(nclass))
-        
+            height = max(c(1000, 350*(length(nclass))))
+            png(file.path(outpath, name), width=1000, height=height)
+                
+            if(split == TRUE){
+                par(mfrow=c(length(nclass), 1),cex=max(1.25, 0.30*length(nclass)))
+                cat("Drawing the profiles with split...\n")
+            }
+            if(length(shift) != length(nclass))
+                shift = rep(shift, length(nclass))
         
             for(i in nclass){
                         
                 m.tmp = m[m[,1] == i,]
                 l.tmp = l[m.tmp[,2]]
                 palette.tmp = palette[m.tmp[,2]]
+                x = 0:(length(l[[i]])-1) - shift[i]
                 for(j in 1:length(l.tmp)){
                     if(j == 1){
                         ylim = c(min(unlist(l.tmp, use.names=F)), max(unlist(l.tmp, use.names=F)))
-                        x = 0:(length(l[[i]])-1) - shift
                         plot(x, l.tmp[[j]], col=palette.tmp[j], type="l", lwd=2, ylab="mean.coverage", xlab="position", main=names(l.tmp)[j], ylim=ylim)
                     }else{
                         lines(x, l.tmp[[j]], col=palette.tmp[j], lwd=2)

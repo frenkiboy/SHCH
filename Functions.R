@@ -130,9 +130,9 @@
 # -------------------------------------------------------------- #
 #{6}
     # Creates random regions and takes only those that do not overlap any segment
-    CreateRandomRegions = function(seqlen, window.size, ranges=NULL, num.of.rand.reg=5000){
+    CreateRandomRegions = function(seqlen, window.size, ranges=NULL, num.of.rand.reg=5000, n=2, k=1){
         
-        wins = MakeTillingWindow(seqlen, (window.size*2+1))
+        wins = MakeTillingWindow(seqlen, (window.size*n+k))
         if(!is.null(ranges)){
             cat("Removing the random regions that overlap designated regions...\n")
             overlap = as.matrix(findOverlaps(wins, ranges))
@@ -143,3 +143,88 @@
         return(rand.reg.s)
 
     }   
+
+# -------------------------------------------------------------- #
+#{7}
+    #Takes a granges object and sets the coordinate to start/end based on the strand
+    MakeViewPoint = function(granges, viewpoint="start"){
+        
+        if(!class(granges) == "GRanges")
+            stop("Input must be a valid GRanges object")
+
+        if(!viewpoint %in% c("start","end") | length(viewpoint) >1)
+            stop("viewpoint argument can only take values of start or end")
+        
+        amb.strand.ind = as.vector(strand(granges) == "*")
+        if(any(amb.strand.ind)){
+            cat("Setting ambiguous strand to +\n")
+            strand(granges)[amb.strand.ind] = "+"
+        }
+            
+        pos.strand = as.vector(strand(granges) == "+")
+        if(viewpoint == "start"){
+            cat("Setting the viewpoint to start...\n")
+            end(granges)[pos.strand]    = start(granges)[pos.strand]
+            start(granges)[!pos.strand] = end(granges)[!pos.strand] 
+        }else if(viewpoint == "end"){
+            cat("Setting the viewpoint to end...\n")
+            end(granges)[!pos.strand]  = start(granges)[!pos.strand]
+            start(granges)[pos.strand] = end(granges)[pos.strand] 
+        }
+
+        return(granges)
+    }
+
+# -------------------------------------------------------------- #
+#{8}
+    #Expands a granges object around the viewpoint
+    ExpandGranges = function(granges, upstream=2000, downstream=2000, strand = F){
+
+        if(!class(granges) == "GRanges")
+            stop("Input must be a valid GRanges object")
+
+        if(!is.numeric(upstream))
+            stop("Upstream must be numeric")
+
+        if(!is.numeric(downstream))
+            stop("Downstream must be numeric")
+
+        if(!is.logical(strand))
+            stop("strand must be logical")
+
+                
+        if(strand == FALSE){
+            cat("Expanding the unstranded regions...\n")
+            start(granges) = start(granges) - upstream
+            end(granges) = end(granges) + downstream
+        }
+
+        if(strand == TRUE){
+            cat("Expanding the stranded regions...\n")
+            strand.ind = as.vector(strand(granges) == "+")
+            start(granges)[strand.ind] = start(granges)[strand.ind] - upstream
+            end(granges)[strand.ind] = end(granges)[strand.ind] + downstream
+            
+            start(granges)[!strand.ind] = start(granges)[!strand.ind] - downstream
+            end(granges)[!strand.ind] = end(granges)[!strand.ind] + upstream
+        }
+        return(granges)
+
+    }
+
+
+# -------------------------------------------------------------- #
+# {9}
+    # fives the index of granges instances which fell of the chromosomes
+    OffChromosomeRegions = function(granges, seqlen){
+
+        ind = rep(FALSE,length(granges))
+        for(i in names(seqlen)){
+            cat(i,"\r")
+            ind[as.vector(seqnames(granges) == i) & 
+                as.vector(end(granges)) < seqlen[i] & 
+                start(granges) > 0] = TRUE
+        }
+        return(ind)
+    }
+
