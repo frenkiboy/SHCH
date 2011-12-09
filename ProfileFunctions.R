@@ -143,7 +143,7 @@ GetProfiles = function(cov, ranges){
         if(is.null(outpath))
             stop("The output directory needs to be designated")
         
-        profile.list = CalculateColMeans(mat.list, fact.list)
+        profile.list = SplitMatrixByFactor(mat.list, fact.list, colmeans=TRUE)
         ProfilePlotter(l=profile.list, 
                        m=indicator.matrix, 
                        split=split, 
@@ -157,34 +157,47 @@ GetProfiles = function(cov, ranges){
 # -------------------------------------------------------------- #
 # {7}
     # Takes a list of matrices and a list of factors and returns a list of caluculated colmeans for each matrix for each factor
-    CalculateColMeans = function(mat.list, fact.list=NULL){
-        
-
+    SplitMatrixByFactor = function(mat.list, fact.list=NULL, colmeans=TRUE){
+    
+        if(is.null(fact.list)){
+            fact.list = lapply(1:length(mat.list), function(x)NULL)
+        }
         if(any(sapply(names(mat.list), is.null)))
             stop("All mat.list elements have to have designated names")
         
-        cat("Calculating cumulative profiles\n")
+        cat("Splitting the matrices...\n")
         
-        colmeans.list = list()
+        mat.list.new = list()
         for(i in 1:length(mat.list)){
-                
+            
             cat(i,"\r")
             if(!is.null(fact.list) & !is.null(fact.list[[i]])){
                 if(nrow(mat.list[[i]]) != length(fact.list[[i]]))
                     stop("Each profile does not have a designated factor")
-                colmeans.tmp = lapply(split(mat.list[[i]], fact.list[[i]]), colMeans)
-                colmeans.list = c(colmeans.list, colmeans.tmp)
-                
+                mat.list.tmp = split(mat.list[[i]], fact.list[[i]])
+                mat.list.new = c(mat.list.new, mat.list.tmp)
+            
             }else{
-                colmeans.list = c(colmeans.list, list(colMeans(mat.list[[i]])))
-                names(colmeans.list)[length(colmeans.list)] = names(mat.list)[i]
-                
+                mat.list.new = c(mat.list.new, mat.list[i])
+                names(mat.list.new)[length(mat.list.new)] = names(mat.list)[i]
+            
             }
         }
-        return(colmeans.list)
+    
+        null.ind = sapply(l, is.null)
+        if(any(null.ind))
+            mat.list.new[null.ind] = matrix(0)
+                
+        if(colmeans == TRUE){
+                cat("Calculating cumulative profiles\n")
+                mat.list.new = lapply(mat.list.new, colMeans)
+        }
+                
+        return(mat.list.new)
+        
     }
-
-
+    
+   
 # -------------------------------------------------------------- #
 # {8}
     # Takes a list of vectors (mean coverage over a window), and a designator matrix which tells which profiles to plot on the same plot
@@ -232,3 +245,59 @@ GetProfiles = function(cov, ranges){
             }
             dev.off()
         }
+
+# -------------------------------------------------------------- #
+# 
+    #{9} Draw heatmaps
+    DrawHeatmaps = function(mat=NULL, fact=NULL, ord.fact=NULL, outpath, name, mat.cols=NULL, key.cols=NULL){
+
+
+        if(is.null(mat.list) | !is.matrix(mat))
+            stop("The matrix need to be designated")
+        if(is.null(fact))
+            stop("factor needs to be given")
+        if(is.null(name))
+            stop("The output name needs to be designated")
+        if(is.null(outpath))
+            stop("The output directory needs to be designated")
+
+        if(!is.numeric(ord.fact))
+            stop("Ordering factor needs to be a numeric vector")
+        if(is.null(mat.cols))
+            stop("MatrixColors need to be designated")
+        if(is.null(key.cols))
+            stop("Key colors need to be designated")
+        
+        # ------------------------------ #
+        # Adds the sepparator to the heatmap
+        AddSep = function(x, rowsep, col, sepwidth=c(0.05,0.5)){
+            for(rsep in rowsep){
+                rect(xleft =0, ybottom= (rsep)-0.5, xright=ncol(x)+1,  ytop = (rsep+1)-0.5 - sepwidth[2], lty=1, lwd=1, col=col, border=col)
+            }
+        }
+
+        tab = table(as.numeric(fact))
+        nfac = length(tab)
+        rowsep=cumsum(tab)
+        mat.ord = mat[ord.fact,]
+        nsamp = nrow(mat)
+        png(file.path(outpath, name), width=1200, height=max(1000, (250*nsamp/500)))
+            par(cex=max(2, (0.35 * nsamp/500)), mar=c(2,2,2,2), oma=c(1,1,1,1), cex.axis=1.5, cex.main=2)
+            layout(matrix(1:3, ncol=3), widths=c(5,1,1))
+                     
+            image(x=0:ncol(mat), y=0:nrow(mat), z = t(mat.ord), col=mat.cols, useRaster=T, main=name , xlab="Positon", ylab="Sample")
+            AddSep(mat, rowsep[-length(rowsep)], "black")
+                        
+            image(t(matrix(as.numeric(fact[ord.fact]), ncol=1)), col=key.cols, axes=F)
+
+            # plots the annotation for each group
+            t = tab/2
+            t[2:nfac] = t[1:(nfac-1)] +t[2:nfac]
+            plot.new()
+            plot.window(xlim=c(0,2), ylim=c(0,nrow(mat)))
+            text(1, cumsum(t)+2^(1:nfac), levels(fact), cex=2)
+        dev.off()
+    }
+ 
+
+
