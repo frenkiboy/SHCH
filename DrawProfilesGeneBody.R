@@ -4,9 +4,9 @@
 
 # ------------------------------------------- #
 # loads the functions
-source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
-source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
-library(genome.name, character.only=T)
+functions.path = '/home/members/vfranke/Projects/Fugaku_HistoneModification_20052011/Scripts/MasashiLib/SubstituteHistoneChipSeq'
+source(file.path(functions.path, "Functions.R"))
+source(file.path(functions.path, "ProfileFunctions.R"))
 library(RColorBrewer)
 
 
@@ -27,17 +27,18 @@ pal = brewer.pal(9, "Set1")
 
 random.col = pal[9]
 
+input.file = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/NormalizedCoverage/FugakuHistones.samp24.uniqTRUEReducedNormalized.bwa.RData"
 
+gene.annotation.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/AnnotatedGenes/Ens.genes.annot.fc2.txt"
 
 # ------------------------------------------- #
 # loads the data
-input.file = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/NormalizedCoverage/FugakuHistones.samp24.uniqTRUEReducedNormalized.bwa.RData"
 Assigner(input.file, "l.data")
+genome = GenomeLoader(genome.name)
 
 input.ind=grepl("input", names(l.data))
 cov.data = l.data[!input.ind]
 # loads the gene annotation
-gene.annotation.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/AnnotatedGenes/Ens.genes.annot.fc2.txt"
 gene.annotation<-read.delim(gene.annotation.path, header=T, as.is=T) 
 # selects the transcripts with the maximum sum of isoforms
 gene.annotation = gene.annotation[order(-rowSums(gene.annotation[,c("X0h.rpkm","X72h.rpkm")])),]
@@ -59,7 +60,7 @@ gend = ExpandGranges(MakeViewPoint(genes.large, viewpoint="end"), downstream=200
 
 
 ### removes the random sequences from the genome lengths
-seqlen = seqlengths(Mmusculus)
+seqlen = seqlengths(genome)
 seqlen = seqlen[!grepl("random", names(seqlen))]
 seqlen = seqlen[names(seqlen) != "chrM"]
 

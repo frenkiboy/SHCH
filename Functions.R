@@ -228,3 +228,12 @@
         return(ind)
     }
 
+# -------------------------------------------------------------- #
+# {10}
+	# loads the genome given the name of the library
+	GenomeLoader = function(genome){
+		
+		require(genome, character.only=T)
+		genome.name = unlist(strsplit(genome, split='\\.')) 
+		return(get(genome.name[2]))		
+	}
