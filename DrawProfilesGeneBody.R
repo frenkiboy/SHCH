@@ -21,7 +21,7 @@ num.of.rand.reg = 5000
 
 genome.name = "BSgenome.Mmusculus.UCSC.mm9"
 
-outpath="/home/guests/abcsan/SubstituteHistones/Results/WholeBodyProfiles"
+outpath="/common/SHARED/vfranke/Fugaku_ChipSeq/Results/GeneBodyProfiles"
 
 pal = brewer.pal(9, "Set1")
 
@@ -38,8 +38,9 @@ genome = GenomeLoader(genome.name)
 
 input.ind=grepl("input", names(l.data))
 cov.data = l.data[!input.ind]
+rm(l.data)
 # loads the gene annotation
-gene.annotation<-read.delim(gene.annotation.path, header=T, as.is=T) 
+gene.annotation = read.delim(gene.annotation.path, header=T, as.is=T) 
 # selects the transcripts with the maximum sum of isoforms
 gene.annotation = gene.annotation[order(-rowSums(gene.annotation[,c("X0h.rpkm","X72h.rpkm")])),]
 gene.annotation = gene.annotation[!duplicated(gene.annotation$ens.gene.id),]
@@ -52,7 +53,7 @@ start(genes.ranges) = start(genes.ranges) - window.size
 end(genes.ranges) = end(genes.ranges) + window.size
 count = countOverlaps(genes.ranges, genes.ranges)
 genes.selected = genes.ranges[count == 1]
-genes.selected = genes.selected[as.vector(seqnames(genes.selected)) == "chr1"]
+genes.selected = genes.selected[as.vector(seqnames(genes.selected)) %in% c("chr1")]
 
 genes.large = genes.selected[width(genes.selected) > min.gene.length]
 tss = ExpandGranges(MakeViewPoint(genes.large, viewpoint="start"), upstream=2000, downstream=20000, strand=TRUE)
@@ -77,8 +78,8 @@ gend = gend[ind]
 # creating random regions on the chromosome
 rand.reg = CreateRandomRegions(seqlen, 22000, c(genes.large, tss, gend), n=1, k=1, num.of.rand.reg=1500)
 
-filename<-names(cov.data)
-for(n in 1:length(filename)){  #repeat
+filename = names(cov.data)
+for(n in 1:length(filename)){
     
     #initialization of matrix
     anno_dataframe=NULL
@@ -96,7 +97,6 @@ for(n in 1:length(filename)){  #repeat
     gend.mat = Coverage2Profiles(sample.coverage["chr1"], split(gend, seqnames(gend))["chr1"])
     random.mat = Coverage2Profiles(sample.coverage, rand.reg)
     
-    random.profile = colMeans(random.mat)
    
  
     tss.mat.smooth = t(apply(tss.mat, 1,function(x)ScalerLarge(as.vector(x), 2000)))
@@ -104,9 +104,8 @@ for(n in 1:length(filename)){  #repeat
     rand.mat.smooth = t(apply(random.mat, 1, function(x)ScalerLarge(as.vector(x), 2000)))
     
 
-    tss.norm.smooth = t(log10(t(tss.mat.smooth+1)/(colSums(rand.mat.smooth+1))))
-    gend.norm.smooth = t(log10(t(gend.mat.smooth+1)/(colSums(rand.mat.smooth+1)))) 
-    gene.mat = tss.mat
+    tss.norm.smooth = t(log10(t(tss.mat.smooth+1)/(colMeans(rand.mat.smooth+1))))
+    gend.norm.smooth = t(log10(t(gend.mat.smooth+1)/(colMeans(rand.mat.smooth+1)))) 
     # removes very high coverage regions
     k = 5
     o = unique(c(head(order(-rowSums(tss.mat)), k), head(order(-rowSums(gend.mat)), k)))
@@ -343,8 +342,11 @@ for(n in 1:length(filename)){  #repeat
     expr.0h = log10(values(tss.to.use)$X0h.rpkm+1)
     expr.72h = log10(values(tss.to.use)$X72h.rpkm+1)
 
-    expr.class.0h = paste("0h",cut(expr.0h, breaks=c(0,1,4,5,6,max(expr.0h)), include.lowest=T), sep=" ")
-    expr.class.72h = paste("72h", cut(expr.72h, breaks=c(0,1,4,5,6,max(expr.72h)), include.lowest=T), sep=" ")
+    expr.class.0h = paste("0h",cut(expr.0h, breaks=c(0,1,4,5,6,max(expr.0h)), include.lowest=T), sep=".")
+    expr.class.72h = paste("72h", cut(expr.72h, breaks=c(0,1,4,5,6,max(expr.72h)),	include.lowest=T), sep=".")
+	expr.class = as.factor(paste(expr.class.0h, expr.class.72h, sep=' '))
+	
+
     unique.ind = unique(expr.class.0h)
     expr.fact = as.factor(paste(expr.class.0h, expr.class.72h))
     table(expr.class.0h, expr.class.72h)

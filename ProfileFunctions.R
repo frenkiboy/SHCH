@@ -184,10 +184,10 @@ GetProfiles = function(cov, ranges){
             }
         }
     
-        null.ind = sapply(l, is.null)
-        if(any(null.ind))
-            mat.list.new[null.ind] = matrix(0)
-                
+        null.ind = sapply(mat.list.new, function(x)length(x) == 0)
+        if(any(null.ind)){
+			stop("Some factors have zero cases")
+        }      
         if(colmeans == TRUE){
                 cat("Calculating cumulative profiles\n")
                 mat.list.new = lapply(mat.list.new, colMeans)
@@ -217,11 +217,12 @@ GetProfiles = function(cov, ranges){
             if(any(!m %in% 1:length(l)))
                 stop("matrix has invalid combinations for plotting")
             nclass = unique(m[,1])
+
             height = max(c(1000, 350*(length(nclass))))
             png(file.path(outpath, name), width=1000, height=height)
                 
             if(split == TRUE){
-                par(mfrow=c(length(nclass), 1),cex=max(1.25, 0.30*length(nclass)))
+                par(mfrow=c(length(nclass), 1),cex=max(1, 0.30*length(nclass)))
                 cat("Drawing the profiles with split...\n")
             }
             if(length(shift) != length(nclass))
@@ -282,7 +283,7 @@ GetProfiles = function(cov, ranges){
         mat.ord = mat[ord.fact,]
         nsamp = nrow(mat)
         png(file.path(outpath, name), width=1200, height=max(1000, (250*nsamp/500)))
-            par(cex=max(2, (0.35 * nsamp/500)), mar=c(2,2,2,2), oma=c(1,1,1,1), cex.axis=1.5, cex.main=2)
+            par(cex=(0.1 +0.1*nsamp/1000) * nsamp/500, mar=c(2,2,2,2), oma=c(1,1,1,1), cex.axis=1.5, cex.main=2)
             layout(matrix(1:3, ncol=3), widths=c(5,1,1))
                      
             image(x=0:ncol(mat), y=0:nrow(mat), z = t(mat.ord), col=mat.cols, useRaster=T, main=name , xlab="Positon", ylab="Sample")
@@ -295,7 +296,7 @@ GetProfiles = function(cov, ranges){
             t[2:nfac] = t[1:(nfac-1)] +t[2:nfac]
             plot.new()
             plot.window(xlim=c(0,2), ylim=c(0,nrow(mat)))
-            text(1, cumsum(t)+2^(1:nfac), levels(fact), cex=2)
+            text(1, cumsum(t)+2^(1:nfac), levels(fact), cex=1.5)
         dev.off()
     }
  
