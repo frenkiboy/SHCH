@@ -79,7 +79,7 @@ gend = gend[ind]
 rand.reg = CreateRandomRegions(seqlen, 22000, c(genes.large, tss, gend), n=1, k=1, num.of.rand.reg=1500)
 
 filename = names(cov.data)
-for(n in 1:length(filename)){
+for(n in 2:length(filename)){
     
     #initialization of matrix
     anno_dataframe=NULL
@@ -173,7 +173,7 @@ for(n in 1:length(filename)){
                 a = rep(1:n.levs, each=2)
                 indicator.matrix=cbind(a,a) 
                 indicator.matrix[seq(2, length(a), 2),2] = n.levs+1
-                factor.palette = c(brewer.pal(n.levs, "Set1"))
+                factor.palette = brewer.pal(n.levs "Set1")[1:nlevs]
                 DrawProfiles(mat.list=list(TSS=mat.sel, Random=random.mat), 
                              fact.list = list(tmp.fac, NULL), 
                              indicator.matrix=indicator.matrix, 
@@ -381,17 +381,13 @@ for(n in 1:length(filename)){
 
     # -------------------------------------------------------- # 
     # bimodal 0h - bimodal 72h
-    bimodal.0h = paste(values(tss.to.use)$H3k27me3_0h, sep="_", values(tss.to.use)$H3k4me3_0h)
-    bimodal.0h = as.factor(bimodal.0h)
-    levels(bimodal.0h) = paste(c("No","K4","K27","Bi"),"0h", sep=".")
-    bimodal.72h = paste(values(tss.to.use)$H3k27me3_72h, sep="_", values(tss.to.use)$H3k4me3_72h)
-    bimodal.72h = as.factor(bimodal.72h)
-    levels(bimodal.72h) = paste(c("No","K4","K27","Bi"),"72h", sep=".")
-    table(bimodal.0h, bimodal.72h)
+    bimodal.0h = as.factor(paste(values(tss.to.use)$H3k27me3_0h, sep="_", values(tss.to.use)$H3k4me3_0h))
+	levels(bimodal.0h) = c("None","K4","K27","Bimod")
+    bimodal.72h = as.factor(paste(values(tss.to.use)$H3k27me3_72h, sep="_", values(tss.to.use)$H3k4me3_72h))
+	levels(bimodal.72h) = c("None","K4","K27","Bimod")
+
     
-    bimodal.levs = apply(expand.grid(levels(bimodal.0h), levels(bimodal.72h)),1, paste, collapse=" ")
     bimodal.fact = as.factor(paste(as.character(bimodal.0h), as.character(bimodal.72h)))
-    levels(bimodal.fact) = bimodal.levs
 
     bimodal.tss.outpath = file.path(sample.outpath, "Bimodal.0h.72h.TSS")
         dir.create(bimodal.tss.outpath, showWarnings=F)
