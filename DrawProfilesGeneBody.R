@@ -1,3 +1,4 @@
+#!/common/software/shared/R-2.14.0/bin/R
 # INFO: Draws chipseq whole gene profiles
 # DATE: 6.12.2011.
 # AUTH: ABC
@@ -33,12 +34,9 @@ gene.annotation.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/AnnotatedG
 
 # ------------------------------------------- #
 # loads the data
-Assigner(input.file, "l.data")
+Assigner(input.file, "cov.data")
 genome = GenomeLoader(genome.name)
 
-input.ind=grepl("input", names(l.data))
-cov.data = l.data[!input.ind]
-rm(l.data)
 # loads the gene annotation
 gene.annotation = read.delim(gene.annotation.path, header=T, as.is=T) 
 # selects the transcripts with the maximum sum of isoforms
@@ -79,11 +77,9 @@ gend = gend[ind]
 rand.reg = CreateRandomRegions(seqlen, 22000, c(genes.large, tss, gend), n=1, k=1, num.of.rand.reg=1500)
 
 filename = names(cov.data)
-for(n in 2:length(filename)){
+for(n in 1:length(filename)){
     
-    #initialization of matrix
-    anno_dataframe=NULL
-    sample.name = filename[n]
+   sample.name = filename[n]
     
     # selects the input data for the corresponding time point
     sample.timepoint = str_replace(sample.name,"h.+","h")
@@ -97,14 +93,11 @@ for(n in 2:length(filename)){
     gend.mat = Coverage2Profiles(sample.coverage["chr1"], split(gend, seqnames(gend))["chr1"])
     random.mat = Coverage2Profiles(sample.coverage, rand.reg)
     
-   
- 
-    tss.mat.smooth = t(apply(tss.mat, 1,function(x)ScalerLarge(as.vector(x), 2000)))
+	tss.mat.smooth = t(apply(tss.mat, 1,function(x)ScalerLarge(as.vector(x), 2000)))
     gend.mat.smooth = t(apply(gend.mat, 1, function(x)ScalerLarge(as.vector(x), 2000)))
     rand.mat.smooth = t(apply(random.mat, 1, function(x)ScalerLarge(as.vector(x), 2000)))
     
-
-    tss.norm.smooth = t(log10(t(tss.mat.smooth+1)/(colMeans(rand.mat.smooth+1))))
+	tss.norm.smooth = t(log10(t(tss.mat.smooth+1)/(colMeans(rand.mat.smooth+1))))
     gend.norm.smooth = t(log10(t(gend.mat.smooth+1)/(colMeans(rand.mat.smooth+1)))) 
     # removes very high coverage regions
     k = 5
@@ -147,7 +140,6 @@ for(n in 2:length(filename)){
                                        genes, set.name, nset, shift){
  
             nfac = length(levels(factor))
-            
             cat("Drawing profiles for :", set.name, "\n")   
            
             s = seq(1, nfac, nset)
@@ -155,12 +147,13 @@ for(n in 2:length(filename)){
                 
                 
                 end = min(i+(nset-1),nfac)
-                levs = levels(factor)[i:end, drop=T]
+                levs = levels(factor)[i:end, drop=F]
                 print(levs)
                 fac.ind = factor %in% levs
                 n.levs=length(levs)
             
                 tmp.fac = factor[fac.ind, drop=T]
+				levels(tmp.fac) = levs
                 mat.sel = mat[fac.ind,]
                 mat.smooth.sel = mat.smooth[fac.ind,]
                 mat.norm.sel = mat.norm[fac.ind,]
@@ -173,7 +166,7 @@ for(n in 2:length(filename)){
                 a = rep(1:n.levs, each=2)
                 indicator.matrix=cbind(a,a) 
                 indicator.matrix[seq(2, length(a), 2),2] = n.levs+1
-                factor.palette = brewer.pal(n.levs "Set1")[1:nlevs]
+                factor.palette = brewer.pal(n.levs, "Set1")[1:n.levs]
                 DrawProfiles(mat.list=list(TSS=mat.sel, Random=random.mat), 
                              fact.list = list(tmp.fac, NULL), 
                              indicator.matrix=indicator.matrix, 
@@ -183,7 +176,7 @@ for(n in 2:length(filename)){
                              shift=shift, 
                              split=TRUE)
                 
-                
+              
                 DrawProfiles(mat.list=list(TSS=mat.sel, Random=random.mat), 
                              fact.list=list(tmp.fac, NULL), 
                              indicator.matrix=NULL, 
@@ -192,7 +185,7 @@ for(n in 2:length(filename)){
                              palette=c(factor.palette, "darkgray"), 
                              shift=shift, 
                              split=FALSE)
-                    
+        }            
                 # ----------------------------- #
                 # heatmaps
                 
@@ -318,7 +311,7 @@ for(n in 2:length(filename)){
                         mat.norm = tss.norm.smooth.filt,
                         plot.outpath = bimodal.tss.tata, 
                         set.name = paste(sample.name,"TSS", "Bimodal","tata", sep="."),
-                        factor = bimodal.cpg,
+                        factor = bimodal.tata,
                         genes=tss.to.use, 
                         nset=4,
                         shift=2000)
@@ -330,7 +323,7 @@ for(n in 2:length(filename)){
                         mat.norm = gend.norm.smooth.filt,
                         plot.outpath = bimodal.gend.tata, 
                         set.name = paste(sample.name,"Gend", "Bimodal","tata", sep="."),
-                        factor = bimodal.cpg,
+                        factor = bimodal.tata,
                         genes=tss.to.use, 
                         nset=4,
                         shift=20000)
@@ -342,8 +335,8 @@ for(n in 2:length(filename)){
     expr.0h = log10(values(tss.to.use)$X0h.rpkm+1)
     expr.72h = log10(values(tss.to.use)$X72h.rpkm+1)
 
-    expr.class.0h = paste("0h",cut(expr.0h, breaks=c(0,1,4,5,6,max(expr.0h)), include.lowest=T), sep=".")
-    expr.class.72h = paste("72h", cut(expr.72h, breaks=c(0,1,4,5,6,max(expr.72h)),	include.lowest=T), sep=".")
+    expr.class.0h = paste(cut(expr.0h, breaks=c(0,1,4,5,6,max(expr.0h)), include.lowest=T), "0h",sep=".")
+    expr.class.72h = paste(, cut(expr.72h, breaks=c(0,1,4,5,6,max(expr.72h)),	include.lowest=T), sep=".")
 	expr.class = as.factor(paste(expr.class.0h, expr.class.72h, sep=' '))
 	
 
@@ -382,12 +375,14 @@ for(n in 2:length(filename)){
     # -------------------------------------------------------- # 
     # bimodal 0h - bimodal 72h
     bimodal.0h = as.factor(paste(values(tss.to.use)$H3k27me3_0h, sep="_", values(tss.to.use)$H3k4me3_0h))
-	levels(bimodal.0h) = c("None","K4","K27","Bimod")
+	levels(bimodal.0h) = paste(c("No","K4","K27","Bi"),"0h",  sep='.')
     bimodal.72h = as.factor(paste(values(tss.to.use)$H3k27me3_72h, sep="_", values(tss.to.use)$H3k4me3_72h))
-	levels(bimodal.72h) = c("None","K4","K27","Bimod")
+	levels(bimodal.72h) = paste(c("No","K4","K27","Bi"), "72h", sep='.')
+	levs = apply(expand.grid(levels(bimodal.0h), levels(bimodal.72h)), 1, paste, collapse=" ")
 
     
-    bimodal.fact = as.factor(paste(as.character(bimodal.0h), as.character(bimodal.72h)))
+    bimodal.fact = factor(paste(as.character(bimodal.0h), as.character(bimodal.72h)))
+	levels(bimodal.fact) = c(levels(bimodal.fact), setdiff(levs, levels(bimodal.fact)))
 
     bimodal.tss.outpath = file.path(sample.outpath, "Bimodal.0h.72h.TSS")
         dir.create(bimodal.tss.outpath, showWarnings=F)
@@ -415,8 +410,5 @@ for(n in 2:length(filename)){
                     genes=tss.to.use, 
                     nset=4,
                     shift=20000)
-
-
-
 
 }

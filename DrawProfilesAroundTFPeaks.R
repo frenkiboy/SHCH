@@ -12,22 +12,22 @@ peaks.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/Chen_2008_CisgenomeP
 
 outpath="/home/guests/abcsan/SubstituteHistones/Results/DistributionsAroundChenTF"
 
+input.file = "/common/USERS/vfranke/Work/Fugaku_HistoneModification_20052011/Data/ChipSeq/Mapped/RData/Bwa/StandardLengths/FugakuHistones.samp20.w1.uniqTRUE.Normalized.RData"
+
+
+lib.path = '/home/members/vfranke/Projects/Fugaku_HistoneModification_20052011/Scripts/MasashiLib/SubstituteHistoneChipSeq'
 # ------------------------------------------- #
 # loads the functions
-source("/home/guests/abcsan/SubstituteHistones/Functions/Functions.R")
-source("/home/guests/abcsan/SubstituteHistones/Functions/ProfileFunctions.R")
+
+source(file.path(lib.path,"ProfileFunctions.R"))
+source(file.path(lib.path,"Functions.R"))
 library(RColorBrewer)
 
 # ------------------------------------------- #
 # loads the data
 library("BSgenome.Mmusculus.UCSC.mm9")
 seqlen = seqlengths(Mmusculus)
-input.file = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/NormalizedCoverage/FugakuHistones.samp24.uniqTRUEReducedNormalized.bwa.RData"
-Assigner(input.file, "l.data")
-
-input.ind=grepl("input", names(l.data))
-cov.input = l.data[input.ind]
-cov.data = l.data[!input.ind]
+Assigner(input.file, "cov.data")
 
 # reading of the peak files and prepearing the data for the analysis
 peak.files= list.files(peaks.path, pattern=".cod$", full.names=T, recursive=T)
@@ -60,7 +60,7 @@ b3.ind = grepl("b3", sample.names)
 sample.names = unique(sub("_.+","", sample.names[!b3.ind]))
 
 sample.palette = c(brewer.pal(3, "Set1")[1:2], "darkgray","lightgray")
-for(i in 2:length(sample.names)){
+for(i in 1:length(sample.names)){
 
 
     sample = sample.names[i]

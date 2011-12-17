@@ -158,7 +158,7 @@ GetProfiles = function(cov, ranges){
 # {7}
     # Takes a list of matrices and a list of factors and returns a list of caluculated colmeans for each matrix for each factor
     SplitMatrixByFactor = function(mat.list, fact.list=NULL, colmeans=TRUE){
-    
+
         if(is.null(fact.list)){
             fact.list = lapply(1:length(mat.list), function(x)NULL)
         }
@@ -183,14 +183,26 @@ GetProfiles = function(cov, ranges){
             
             }
         }
-    
-        null.ind = sapply(mat.list.new, function(x)length(x) == 0)
-        if(any(null.ind)){
-			stop("Some factors have zero cases")
-        }      
+
+        # checks whether there are empty vectors and converts them all to zero
+		null.ind = sapply(mat.list.new, function(x)length(x) == 0)
+		if(any(null.ind)){
+			len = unique(sapply(mat.list.new[!null.ind], function(x)ifelse(is.matrix(x), nrow(x), length(x))))
+			mat.list.new[null.ind] = lapply(1:sum(null.ind), function(x)matrix(1:n, ncol=len))
+			# stop("Some factors have zero cases")
+        } 
+		
+		# converts all vectors to matricex
+		mat.ind = sapply(mat.list.new, function(x)(!is.matrix(x) & !is.data.frame(x)))
+		if(any(mat.ind)){
+			mat.list.new[mat.ind] = lapply(mat.list.new[mat.ind], function(x)t(as.matrix(x)))
+		}
+		
         if(colmeans == TRUE){
                 cat("Calculating cumulative profiles\n")
-                mat.list.new = lapply(mat.list.new, colMeans)
+				zero.ind = sapply(mat.list.new, function(x)nrow(x)==0)
+                mat.list.new[zero.ind] = lapply(mat.list.new[zero.ind], colSums)
+                mat.list.new[!zero.ind] = lapply(mat.list.new[!zero.ind], colMeans)
         }
                 
         return(mat.list.new)
@@ -202,11 +214,11 @@ GetProfiles = function(cov, ranges){
 # {8}
     # Takes a list of vectors (mean coverage over a window), and a designator matrix which tells which profiles to plot on the same plot
         ProfilePlotter = function(l = NULL, m = NULL, split=FALSE, outpath, name, palette, shift=0){
-                
+               
+			cat("Starting the profile plotting...\n")
             if(!is.list(l))
                 stop("l needs to be a list")        
-                
-                
+             
             if(split == FALSE)
                 m = cbind(1,1:length(l))
             if(split == TRUE & is.null(m))
@@ -253,7 +265,7 @@ GetProfiles = function(cov, ranges){
     DrawHeatmaps = function(mat=NULL, fact=NULL, ord.fact=NULL, outpath, name, mat.cols=NULL, key.cols=NULL){
 
 
-        if(is.null(mat.list) | !is.matrix(mat))
+        if(is.null(mat) | !is.matrix(mat))
             stop("The matrix need to be designated")
         if(is.null(fact))
             stop("factor needs to be given")
