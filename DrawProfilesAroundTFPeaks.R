@@ -4,13 +4,13 @@
 
 # ------------------------------------------- #
 # SCRIPT VARIABLES
-window.size = 2000
+window.size = 500
 
 num.of.rand.reg = 5000
 
 peaks.path = "/common/SHARED/vfranke/Fugaku_ChipSeq/Results/Chen_2008_CisgenomePeaks/Peaks/"
 
-outpath="/home/guests/abcsan/SubstituteHistones/Results/DistributionsAroundChenTF"
+outpath="/common/SHARED/vfranke/Fugaku_ChipSeq/Results/Chen_2008_PeakProfiles"
 
 input.file = "/common/USERS/vfranke/Work/Fugaku_HistoneModification_20052011/Data/ChipSeq/Mapped/RData/Bwa/StandardLengths/FugakuHistones.samp20.w1.uniqTRUE.Normalized.RData"
 
@@ -22,6 +22,7 @@ lib.path = '/home/members/vfranke/Projects/Fugaku_HistoneModification_20052011/S
 source(file.path(lib.path,"ProfileFunctions.R"))
 source(file.path(lib.path,"Functions.R"))
 library(RColorBrewer)
+library(stringr)
 
 # ------------------------------------------- #
 # loads the data
@@ -65,7 +66,7 @@ for(i in 1:length(sample.names)){
 
     sample = sample.names[i]
     print(sample)
-    cov.sample = cov.data[grepl(paste("^",sample,"_", sep=""), names(cov.data)) & !grepl("b3", names(cov.data))]
+    cov.sample = cov.data[str_detect(names(cov.data), paste("^",sample,"_", sep="")) & !str_detect( names(cov.data), "b3")]
     names(cov.sample) = sub("h.+","h", names(cov.sample))
     if(length(cov.sample) != 2)
         stop("The number of samples is not 2")
@@ -87,7 +88,7 @@ for(i in 1:length(sample.names)){
         chrs = intersect(names(chip.ranges.s), names(cov.sample[[1]]))
         chip.ranges.s = chip.ranges.s[chrs]
         chip.ranges=Reduce(c, chip.ranges.s)
-        random.profiles = CreateRandomRegions(seqlen=seqlen[chrs], window.size=2000, ranges=chip.ranges)
+        random.profiles = CreateRandomRegions(seqlen=seqlen[chrs], window.size=window.size, ranges=chip.ranges)
         
         
         # ------------------------------------------------------ #
@@ -106,6 +107,7 @@ for(i in 1:length(sample.names)){
         names(rand.profiles.filt) = paste(names(chip.profiles.filt), "rand", sep=".")
         mat.list = c(chip.profiles.filt, rand.profiles.filt)
         
+		
         DrawProfiles(mat.list=mat.list, 
                      fact.list=list(NULL, NULL, NULL, NULL), 
                      indicator.matrix=NULL, 
